@@ -1,0 +1,2 @@
+rootProject.name = 'PullThePin'
+include 'core', 'desktop', 'android'

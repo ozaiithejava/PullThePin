@@ -1,0 +1,32 @@
+# Gradle
+.gradle/
+build/
+*/build/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# Android
+local.properties
+.externalNativeBuild
+.cxx
+*.apk
+*.aab
+
+# OS Generated
+.DS_Store
+Thumbs.db
+*.swp
+*~

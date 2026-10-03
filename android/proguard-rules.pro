@@ -1,0 +1,4 @@
+-dontwarn com.badlogic.gdx.backends.android.AndroidFragmentApplication
+-dontwarn com.badlogic.gdx.utils.GdxBuild
+-dontwarn com.badlogic.gdx.physics.box2d.World
+-keep class com.badlogic.gdx.backends.android.** { *; }
