@@ -1,0 +1,41 @@
+name: Build Android APK
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: android-actions/setup-android@v3
+      - name: Build
+        id: build
+        continue-on-error: true
+        run: |
+          chmod +x gradlew
+          ./gradlew :android:assembleDebug --no-daemon --console=plain > build.log 2>&1
+      - name: Publish build log on failure
+        if: steps.build.outcome == 'failure'
+        run: |
+          tail -n 300 build.log > /tmp/build.log.txt
+          git config user.name "ci"; git config user.email "ci@users.noreply.github.com"
+          git checkout --orphan buildlog
+          git rm -rf . -q
+          cp /tmp/build.log.txt build.log.txt
+          git add build.log.txt
+          git commit -qm "build log"
+          git push -f origin buildlog
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PullThePin-debug-apk
+          path: android/build/outputs/apk/debug/*.apk
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Build ${{ github.run_number }}
+          files: android/build/outputs/apk/debug/*.apk
