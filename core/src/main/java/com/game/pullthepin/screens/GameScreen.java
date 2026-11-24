@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.*;
@@ -40,6 +41,14 @@ public class GameScreen extends InputAdapter implements Screen {
     public static final float WORLD_HEIGHT = 16.0f;
     public static final float UI_WIDTH = 720f;
     public static final float UI_HEIGHT = 1280f;
+
+    // BUG FIX: Bazı seviyelerde pim tutamaçları (handle) dünya sınırlarına (0..WORLD_WIDTH) çok
+    // yakın ya da onu hafifçe aşan konumlarda; FitViewport yatayda tam ekran genişliğine
+    // oturduğundan (letterbox olmadığından) bu tutamaçlar telefon ekranının fiziksel kenarında
+    // kırpılıyor ve bazı cihazlarda tam çekilemiyordu. Çözüm: kamerayı, oyun mantığını
+    // (duvar/top/kavanoz koordinatlarını) HİÇ değiştirmeden, her iki yanda küçük bir güvenlik
+    // payı gösterecek şekilde hafifçe genişletmek.
+    private static final float EDGE_PAD_X = 0.45f;
 
     private PullThePinGame game;
     private int currentLevel;
@@ -151,7 +160,8 @@ public class GameScreen extends InputAdapter implements Screen {
         this.dailyChallenge = dailyChallenge;
 
         worldCamera = new OrthographicCamera();
-        worldViewport = new FitViewport(WORLD_WIDTH, WORLD_HEIGHT, worldCamera);
+        // Not: yalnızca genişliğe pay eklenir; dünya mantığı (WORLD_WIDTH/HEIGHT) değişmez.
+        worldViewport = new FitViewport(WORLD_WIDTH + EDGE_PAD_X * 2f, WORLD_HEIGHT, worldCamera);
         worldCamera.position.set(WORLD_WIDTH / 2f, WORLD_HEIGHT / 2f, 0);
 
         uiCamera = new OrthographicCamera();
@@ -744,7 +754,13 @@ public class GameScreen extends InputAdapter implements Screen {
         sr.begin(ShapeRenderer.ShapeType.Filled);
 
         // 1. DİNAMİK DÜNYA ARKA PLANI
-        worldTheme.renderBackground(sr, WORLD_WIDTH, WORLD_HEIGHT);
+        // EDGE_PAD_X ile genişletilen kamera alanını da kaplasın diye arka plan, projeksiyon
+        // matrisini geçici olarak sola kaydırarak biraz daha geniş çizilir; WorldTheme'in
+        // kendisi değiştirilmez.
+        Matrix4 bgProjection = new Matrix4(worldCamera.combined).translate(-EDGE_PAD_X, 0, 0);
+        sr.setProjectionMatrix(bgProjection);
+        worldTheme.renderBackground(sr, WORLD_WIDTH + EDGE_PAD_X * 2f, WORLD_HEIGHT);
+        sr.setProjectionMatrix(worldCamera.combined);
 
         // 2. Parçacıklar
         particleSystem.render(sr);
